@@ -24,31 +24,26 @@ const ptdData = inject<IPtdData>("ptd_data", {});
 const el = useTemplateRef<HTMLElement>("el");
 provide("app", el);
 
-// 记录一下与右边界和下边界的距离
-const rightX = ref<number>(0);
+// 记录一下与下边界的距离
 const bottomY = ref<number>(0);
 
 const openSpeedDial = ref<boolean>(false);
-const { x, y, style } = useDraggable(el, {
+const { y } = useDraggable(el, {
   preventDefault: true,
-  initialValue: { x: -100, y: -100 }, // Default position off-screen
-  onEnd: ({ x, y }) => {
-    configStore.updateContentScriptPosition(x, y);
-    const { clientWidth, clientHeight } = document.documentElement;
-    rightX.value = clientWidth - x;
+  axis: "y",
+  initialValue: { x: 0, y: -100 }, // Default position off-screen
+  onEnd: ({ y }) => {
+    configStore.updateContentScriptPosition(0, y);
+    const { innerHeight: clientHeight } = window;
     bottomY.value = clientHeight - y;
   },
 });
+// ponytail: keep horizontal position CSS-anchored; stored left coordinates break after window resize.
+const fabStyle = computed(() => ({ top: `${y.value}px`, right: "16px" }));
 
 // 监听窗口大小变化，更新位置
 window.addEventListener("resize", () => {
-  const { innerWidth: clientWidth, innerHeight: clientHeight } = window;
-
-  x.value = clientWidth - 100; // ponytail: this FAB should hug the viewport right edge.
-  if (x.value > clientWidth - 50 || x.value < 0) {
-    x.value = clientWidth - 100; // 确保不会超出右边界
-  }
-  rightX.value = clientWidth - x.value;
+  const { innerHeight: clientHeight } = window;
 
   y.value = clientHeight - bottomY.value; // 底部吸附
   if (y.value > clientHeight - 50 || y.value < 0) {
@@ -66,11 +61,9 @@ configStore.$onReady(() => {
   }
 
   let { y: storeY = -100 } = configStore.contentScript?.position ?? {};
-  let { innerWidth: clientWidth, innerHeight: clientHeight } = window;
+  let { innerHeight: clientHeight } = window;
 
-  x.value = clientWidth - 100; // Default to right side
   y.value = storeY <= 0 || storeY > clientHeight - 50 ? clientHeight - 100 : storeY; // Default to bottom
-  rightX.value = clientWidth - x.value;
   bottomY.value = clientHeight - y.value;
 });
 
@@ -230,7 +223,7 @@ function openOptions() {
   <v-theme-provider :theme="configStore.contentScript.applyTheme ? configStore.uiTheme : ''">
     <div
       ref="el"
-      :style="style"
+      :style="fabStyle"
       style="position: fixed; z-index: 9999999"
       :class="{
         'ptd-fade-enter': configStore.contentScript.fadeEnterStyle,
