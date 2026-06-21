@@ -42,9 +42,9 @@ const { x, y, style } = useDraggable(el, {
 
 // 监听窗口大小变化，更新位置
 window.addEventListener("resize", () => {
-  const { clientWidth, clientHeight } = document.documentElement;
+  const { innerWidth: clientWidth, innerHeight: clientHeight } = window;
 
-  x.value = clientWidth - rightX.value; // 右侧吸附
+  x.value = clientWidth - 100; // ponytail: this FAB should hug the viewport right edge.
   if (x.value > clientWidth - 50 || x.value < 0) {
     x.value = clientWidth - 100; // 确保不会超出右边界
   }
@@ -65,10 +65,10 @@ configStore.$onReady(() => {
     updatePageType(ptdData).catch();
   }
 
-  let { x: storeX = -100, y: storeY = -100 } = configStore.contentScript?.position ?? {};
-  let { clientWidth, clientHeight } = document.documentElement;
+  let { y: storeY = -100 } = configStore.contentScript?.position ?? {};
+  let { innerWidth: clientWidth, innerHeight: clientHeight } = window;
 
-  x.value = storeX <= 0 || storeX > clientWidth - 50 ? clientWidth - 100 : storeX; // Default to right side
+  x.value = clientWidth - 100; // Default to right side
   y.value = storeY <= 0 || storeY > clientHeight - 50 ? clientHeight - 100 : storeY; // Default to bottom
   rightX.value = clientWidth - x.value;
   bottomY.value = clientHeight - y.value;
